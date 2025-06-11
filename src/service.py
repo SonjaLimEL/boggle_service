@@ -1,3 +1,4 @@
+import importlib
 import asyncio
 from typing import Union
 from celery.result import AsyncResult
@@ -18,10 +19,15 @@ class CeleryTaskUnreadyException(Exception):
     pass
 
 
+class CeleryNotEnabled(Exception):
+    pass
+
+
 def in_process_optimized_board_generation():
     return boggle_genetic_algo()
 
 optimized_board_generation_fn = in_process_optimized_board_generation
+my_module = None
 
 if Settings.USE_CELERY:
     my_module = importlib.import_module('worker')
@@ -50,7 +56,9 @@ def get_board(generation_method=None, letters=None) -> Union[BoggleBoard, int]:
 
 
 def get_board_from_redis(task_id):
-    res = get_optimized_board.AsyncResult(task_id)
+    if not Settings.USE_CELERY:
+        raise CeleryNotEnabled
+    res = my_module.get_optimized_board.AsyncResult(task_id)
 
     if res.state in celery.states.EXCEPTION_STATES:
         raise CeleryTaskException("task state: {res.state}")

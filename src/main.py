@@ -43,6 +43,8 @@ def get_async_board(task_id) -> GetBoardResponse:
         raise HTTPException(status_code=422, detail=str(e))
     except service.CeleryTaskUnreadyException as e:
         return JSONResponse(status_code=202, content={"message": "board not ready"})
+    except service.CeleryNotEnabled as e:
+        return JSONResponse(status_code=405, content={"message": "Async board functionality disabled"})
 
     board_dict = json.loads(result)
     return GetBoardResponse(
